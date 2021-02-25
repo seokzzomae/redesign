@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:backgroundTint="#958B8B"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="clip_vertical"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="5dp"
+            android:background="#000000"
+            android:backgroundTint="#000000" />
+
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="50dp">
+
+            <Button
+                android:id="@+id/back"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="center_vertical"
+                android:foreground="@drawable/back"
+                android:padding="4dp"
+                android:text="" />
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical"
+                android:fontFamily="@font/bmhanna"
+
+                android:gravity="right|center_vertical"
+                android:textColor="#000000"
+                android:padding="4dp"
+                android:text="JOSIM"
+                android:textSize="20sp" />
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="300dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal"/>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="#000000"
+            android:backgroundTint="#000000"/>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_gravity="center_horizontal|center_vertical" />
+
+
+        <LinearLayout
+            android:layout_width="300dp"
+            android:layout_height="350dp"
+            android:layout_gravity="center_horizontal|center_vertical"
+            android:background="#FFFFFF"
+            android:backgroundTint="#FFFFFF"
+            android:gravity="center_vertical|center_horizontal"
+            android:orientation="vertical">
+
+
+            <LinearLayout
+                android:layout_width="300dp"
+                android:layout_height="40dp"
+                android:gravity="center_vertical|center_horizontal"
+                android:orientation="horizontal"
+                android:background="@drawable/result_nametab">
+
+
+                <TextView
+                    android:id="@+id/resultname"
+                    android:layout_width="240dp"
+                    android:layout_height="38dp"
+                    android:layout_gravity="center_vertical"
+                    android:fontFamily="@font/bmhanna"
+                    android:gravity="start|center_vertical"
+                    android:padding="4dp"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+
+                <Button
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:gravity="center_horizontal|center_vertical"
+                    android:textColor="#000000"
+                    android:background="@drawable/ic_baseline_playlist_add_24"/>
+
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/resultImage"
+                android:layout_width="299dp"
+                android:layout_height="250dp"
+                android:background="@drawable/bad_result"
+                android:orientation="vertical"
+                 >
+
+
+
+
+                <TextView
+                    android:layout_width="150dp"
+                    android:layout_height="200dp"
+                    android:text=""
+                    android:textSize="25sp"
+                    android:gravity="center"
+                    android:layout_gravity="bottom|center_horizontal"
+                    />
+
+                <TextView
+                    android:id="@+id/yuhumdo"
+                    android:layout_width="150dp"
+                    android:layout_height="25dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:fontFamily="@font/bmhanna"
+                    android:gravity="center"
+                    android:text="매우 위험"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/opinion"
+                    android:layout_width="200dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:fontFamily="@font/bmhanna"
+                    android:gravity="center"
+                    android:text="투자를 삼가하세요!"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+
+
+
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/score"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:max="100" />
+
+
+        </LinearLayout>
+
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/detail_opinion"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/detail_opinion2"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/detail_opinion3"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+
+
+
+
+</androidx.drawerlayout.widget.DrawerLayout>
