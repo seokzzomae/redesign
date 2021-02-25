@@ -19,6 +19,7 @@ import org.xmlpull.v1.XmlPullParserFactory
 import kotlin.random.Random as Random
 import kotlinx.android.synthetic.main.activity_main.*
 
+//////////////PLease work plz
 class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelectedListener {
 
 
