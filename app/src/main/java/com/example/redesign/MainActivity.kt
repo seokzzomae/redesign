@@ -19,9 +19,12 @@ import org.xmlpull.v1.XmlPullParserFactory
 import kotlin.random.Random as Random
 import kotlinx.android.synthetic.main.activity_main.*
 
-//////////////PLease work plz
 class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelectedListener {
 
+    companion object{
+        const val TAG = "MainActivity"
+        const val NUM_MYUNGUN = 4
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,10 +86,6 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
                 ft.replace(R.id.main_frame, Fragment2()).commit()
             }
         }
-
-
-
-
     }
 
     
@@ -94,16 +93,11 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
 
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean { //네비게이션 메뉴 아이템 클릭 시 수행
-        
-        
-        
         when (item.itemId)
-
         {
             R.id.access -> Toast.makeText(applicationContext,"접근성",Toast.LENGTH_SHORT).show()
             R.id.email -> Toast.makeText(applicationContext,"이메일",Toast.LENGTH_SHORT).show()
             R.id.message -> Toast.makeText(applicationContext,"메세지",Toast.LENGTH_SHORT).show()
-
         }
 
 
@@ -114,45 +108,33 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
 
 
     fun myungun() {
+        // TODO!!!!!! getAttributeValue로 현재 인덱스 값을 랜덤 값과 비교하면서 next()로 넘기지 말고
+        // 그냥 첫 "text" 태그 나오면 랜덤 값 횟수만큼 next() 해서 명언 찾기로 바꾸는게 연산 숫자 덜 들 것 같습니다.
 
+        val xml_data =assets.open("file1.xml")
+        val factory =XmlPullParserFactory.newInstance()
+        val parser =factory.newPullParser()
 
-
-
-        var xml_data =assets.open("file1.xml")
-        var factory =XmlPullParserFactory.newInstance()
-        var parser =factory.newPullParser()
-
-        var index =Random.nextInt(0,4)
-
+        val index =Random.nextInt(0, NUM_MYUNGUN) // 명언 수가 바뀌면 명언 인덱스 범위가 바뀔테니 변수처리 하였습니다.
 
         parser.setInput(xml_data,null)
 
         var event =parser.eventType
         while (event != XmlPullParser.END_DOCUMENT){
-            var tag_name = parser.name
-
-            var myungun=""
-            var name=""
+            val tag_name = parser.name
 
             when(event){
-
-
                 XmlPullParser.END_TAG ->{
                     if(tag_name =="text"){
 
                         if(parser.getAttributeValue(0) == index.toString()){
 
-                            var myungun ="\n" +parser.getAttributeValue(1)
-                            text_myungun.setText(myungun)
+                            val myungun ="\n" +parser.getAttributeValue(1)
+                            text_myungun.text = myungun
 
-                            var name ="\n" +parser.getAttributeValue(2)
-                            text_person.setText(name)
-
+                            val name ="\n" +parser.getAttributeValue(2)
+                            text_person.text = name
                         }
-
-
-
-
                     }
                 }
             }
@@ -164,15 +146,9 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
 
 
     fun companyinput() {
-
-
-
         val intent =Intent(this,Result::class.java)
         intent.putExtra("company",companyname.text.toString())
-
         startActivity(intent)
-
     }
-
 }
 
