@@ -36,6 +36,8 @@ class Fragment1 : Fragment() {
             mainActivity.companyinput()
         }
         mainActivity.myungun()
+//        getCorpData 작동하는지 확인하기 위해 추가한 코드. 추후 삭제
+//        mainActivity.getCorpData("anything")
     }
 
 

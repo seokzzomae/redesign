@@ -2,6 +2,7 @@ package com.example.redesign
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.AssetManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
@@ -18,6 +19,7 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import kotlin.random.Random as Random
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelectedListener {
 
@@ -86,7 +88,10 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
         // getAttributeValue로 현재 인덱스 값을 랜덤 값과 비교하면서 next()로 넘기지 말고
         // 그냥 첫 "text" 태그 나오면 랜덤 값 횟수만큼 next() 해서 명언 찾기로 바꾸는게 연산 숫자 덜 들 것 같습니다.
 
-        val xml_data =assets.open("file1.xml")
+        // TODO 현재 이 코드에 문제가 있는 것 같습니다. 수정이 필요할 것 같네요.
+        // 일단 지금 당장 Merge 하게 되면 석호TL님이 작업하신 걸로 사용해야합니다
+
+        val xml_data = assets.open("file1.xml")
         val factory =XmlPullParserFactory.newInstance()
         val parser =factory.newPullParser()
 
@@ -112,10 +117,19 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
         text_person.text = name
     }
 
+    fun getCorpData(corp_name: String) {
+        val assetManager: AssetManager = resources.assets
+        val inputStream= assetManager.open("jsonfile")
+        val jsonString = inputStream.bufferedReader().use { it.readText() }
+        val jObject = JSONObject(jsonString)
+        val jArray = jObject.getJSONArray("rprts")
+        val investEvaluator = InvestEvaluator(jArray, corp_name)
+    }
+
 
     fun companyinput() {
         // TODO 회사명 없이 검색 눌렀을 때 검색 넘어가지 않게, 다른 에러 가능한 케이스도 처리해줘야함
-        val intent =Intent(this,Result::class.java)
+        val intent = Intent(this,Result::class.java)
         intent.putExtra("company",companyname.text.toString())
         startActivity(intent)
     }
