@@ -27,49 +27,21 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
-
-
-
-
-
-
-
-
-
         setFrag(0)
 
         btn_analyze.setOnClickListener {
             setFrag(0)
-
-
         }
 
         btn_findlist.setOnClickListener {
             setFrag(1)
-
         }
-
-
-
-
-
-
-
-
-
-
-
-
 
         btn_navi.setOnClickListener{
             layout_drawer.openDrawer(GravityCompat.START)
-
         }
         naviView.setNavigationItemSelectedListener(this)
     }
-
-
 
     private fun setFrag(fragNum: Int) {
         val ft = supportFragmentManager.beginTransaction()
@@ -83,47 +55,25 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
                 ft.replace(R.id.main_frame, Fragment2()).commit()
             }
         }
-
-
-
-
     }
-
-    
-
 
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean { //네비게이션 메뉴 아이템 클릭 시 수행
-        
-        
-        
         when (item.itemId)
-
         {
             R.id.access -> Toast.makeText(applicationContext,"접근성",Toast.LENGTH_SHORT).show()
             R.id.email -> Toast.makeText(applicationContext,"이메일",Toast.LENGTH_SHORT).show()
             R.id.message -> Toast.makeText(applicationContext,"메세지",Toast.LENGTH_SHORT).show()
-
         }
-
-
         layout_drawer.closeDrawers()
-
         return false
     }
 
-
     fun myungun() {
-
-
-
-
         var xml_data =assets.open("file1.xml")
         var factory =XmlPullParserFactory.newInstance()
         var parser =factory.newPullParser()
-
         var index =Random.nextInt(0,4)
-
 
         parser.setInput(xml_data,null)
 
@@ -165,14 +115,9 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
 
     fun companyinput() {
 
-
-
         val intent =Intent(this,Result::class.java)
         intent.putExtra("company",companyname.text.toString())
-
         startActivity(intent)
-
     }
-
 }
 
