@@ -26,15 +26,13 @@ class Fragment1 : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
         return inflater.inflate(R.layout.frag1, container, false)
+
     }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-
         resultButton.setOnClickListener {
-
             mainActivity.companyinput()
         }
         mainActivity.myungun()

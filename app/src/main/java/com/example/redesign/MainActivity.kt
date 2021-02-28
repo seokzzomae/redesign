@@ -23,51 +23,26 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
 
     companion object{
         const val TAG = "MainActivity"
-        const val NUM_MYUNGUN = 4
+        const val NUM_MYUNGUN = 5
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
-
-
-
-
-
-
-
-
-
         setFrag(0)
 
         btn_analyze.setOnClickListener {
             setFrag(0)
-
-
         }
 
         btn_findlist.setOnClickListener {
             setFrag(1)
-
         }
-
-
-
-
-
-
-
-
-
-
-
 
 
         btn_navi.setOnClickListener{
             layout_drawer.openDrawer(GravityCompat.START)
-
         }
         naviView.setNavigationItemSelectedListener(this)
     }
@@ -108,44 +83,38 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
 
 
     fun myungun() {
-        // TODO!!!!!! getAttributeValue로 현재 인덱스 값을 랜덤 값과 비교하면서 next()로 넘기지 말고
+        // getAttributeValue로 현재 인덱스 값을 랜덤 값과 비교하면서 next()로 넘기지 말고
         // 그냥 첫 "text" 태그 나오면 랜덤 값 횟수만큼 next() 해서 명언 찾기로 바꾸는게 연산 숫자 덜 들 것 같습니다.
 
         val xml_data =assets.open("file1.xml")
         val factory =XmlPullParserFactory.newInstance()
         val parser =factory.newPullParser()
 
-        val index =Random.nextInt(0, NUM_MYUNGUN) // 명언 수가 바뀌면 명언 인덱스 범위가 바뀔테니 변수처리 하였습니다.
+        // 명언 수가 바뀌면 명언 인덱스 범위가 바뀔테니 변수처리 하였습니다
+        // Random.nextInt()는 변수가 하나 들어가면 0~변수 -1 까지의 수를 랜덤으로 내놓기 때문에
+        // 총 명언 개수를 넣어줘야합니다
+        val index =Random.nextInt(NUM_MYUNGUN)
 
         parser.setInput(xml_data,null)
+        var event = parser.eventType
 
-        var event =parser.eventType
-        while (event != XmlPullParser.END_DOCUMENT){
-            val tag_name = parser.name
+        // 첫번째 명언이 나올 때까지 스킵(parser.name : xml_tag 값 반환)
+        while (parser.name != "text") {event = parser.next()}
 
-            when(event){
-                XmlPullParser.END_TAG ->{
-                    if(tag_name =="text"){
+        // 랜덤 인덱스 값만큼 명언 스킵
+        for (i in 0..index-1) {event = parser.next()}
 
-                        if(parser.getAttributeValue(0) == index.toString()){
+        // 랜덤 인덱스 값의 명언에 도달했으므로 명언 내용과 명언을 남긴 사람의 이름을 저장하고 반환
+        val myungun ="\n" +parser.getAttributeValue(1)
+        text_myungun.text = myungun
 
-                            val myungun ="\n" +parser.getAttributeValue(1)
-                            text_myungun.text = myungun
-
-                            val name ="\n" +parser.getAttributeValue(2)
-                            text_person.text = name
-                        }
-                    }
-                }
-            }
-
-            event = parser.next()
-
-        }
+        val name ="\n" +parser.getAttributeValue(2)
+        text_person.text = name
     }
 
 
     fun companyinput() {
+        // TODO 회사명 없이 검색 눌렀을 때 검색 넘어가지 않게, 다른 에러 가능한 케이스도 처리해줘야함
         val intent =Intent(this,Result::class.java)
         intent.putExtra("company",companyname.text.toString())
         startActivity(intent)
