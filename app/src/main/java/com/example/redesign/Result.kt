@@ -5,6 +5,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import kotlinx.android.synthetic.main.activity_result.*
 import kotlinx.android.synthetic.main.frag1.*
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import kotlin.random.Random
 import kotlin.math.min as main
 
 class Result : AppCompatActivity() {
@@ -22,12 +25,15 @@ class Result : AppCompatActivity() {
 
         var situation="관리 조건"  //관리 조건 , 상폐 조건
 
+        var jogun1=""
+
 
 
         var Max_score=25  //가장 안 좋은 점수
 
 
         var text1 ="관련 설명 쓰는 곳곳!!!"
+
 
         score.progress=Max_score
 
@@ -102,3 +108,5 @@ class Result : AppCompatActivity() {
 
     }
 }
+
+
