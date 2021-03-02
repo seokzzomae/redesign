@@ -22,7 +22,7 @@ class Result : AppCompatActivity() {
 
         var text1 ="관련 설명 쓰는 곳곳!!!"
 
-        score.progress=Max_score
+        score.progress = Max_score
 
         detail_opinion.text = text1
 
@@ -33,41 +33,24 @@ class Result : AppCompatActivity() {
         }
 
         when{
-            Max_score >= 75 ->
+            Max_score >= 75 ->{
                 resultImage.setBackgroundResource(
-                        R.drawable.bad_result
-                )
-
-            Max_score > 25 ->
-                resultImage.setBackgroundResource(
-                        R.drawable.medium_result
-                )
-
-            Max_score >= 0 ->
-                resultImage.setBackgroundResource(
-                        R.drawable.good_result
-                )
-        }
-
-        when{
-            Max_score >= 75 ->
+                    R.drawable.bad_result)
                 yuhumdo.text = "매우 위험"
+                opinion.text = "투자를 삼가세요!"
+            }
 
-            Max_score > 25 ->
+            Max_score > 25 ->{
+                resultImage.setBackgroundResource(
+                        R.drawable.medium_result)
                 yuhumdo.text = "위험"
-
-            Max_score >= 0 ->
-                yuhumdo.text = "양호"
-        }
-
-        when{
-            Max_score >= 75 ->
-                opinion.text = "투자를 삼가하세요!"
-
-            Max_score > 25 ->
                 opinion.text = "자산이 위험해요!"
+            }
 
-            Max_score >= 0 -> {
+            Max_score >= 0 ->{
+                resultImage.setBackgroundResource(
+                    R.drawable.good_result)
+                yuhumdo.text = "양호"
                 val text = situation + "은 안 될것 같아요!"
                 opinion.text = text
             }
