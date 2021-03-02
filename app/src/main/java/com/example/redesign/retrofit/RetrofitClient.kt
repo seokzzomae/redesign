@@ -73,12 +73,12 @@ object RetrofitClient {
 
                 // ?client_id=asdfadsf
                 // 쿼리 파라매터 추가하기
-                val addedUrl = originalRequest.url.newBuilder().addQueryParameter("crtfc_key", API.CRTFC_KEY).build()
+                val addedUrl = originalRequest.url.newBuilder().addQueryParameter("token", API.CRTFC_KEY).build()
 
                 val finalRequest = originalRequest.newBuilder()
-                    .url(addedUrl)
-                    .method(originalRequest.method, originalRequest.body)
-                    .build()
+                        .url(addedUrl)
+                        .method(originalRequest.method, originalRequest.body)
+                        .build()
 
                 return chain.proceed(finalRequest)
             }
@@ -100,13 +100,13 @@ object RetrofitClient {
 
             // 레트로핏 빌더를 통해 인스턴스 생성
             retrofitClient = Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(GsonConverterFactory.create())
+                    .baseUrl(baseUrl)
+                    .addConverterFactory(GsonConverterFactory.create())
 
-                // 위에서 설정한 클라이언트로 레트로핏 클라이언트를 설정한다.
-                .client(client.build())
+                    // 위에서 설정한 클라이언트로 레트로핏 클라이언트를 설정한다.
+                    .client(client.build())
 
-                .build()
+                    .build()
         }
 
         return retrofitClient

@@ -13,47 +13,14 @@ class RetrofitManager {
 
     companion object {
         val instance = RetrofitManager()
-        }
+    }
     private val iRetrofit : IRetrofit? = RetrofitClient.getClient(API.BASE_URL)?.create(IRetrofit::class.java)
 
-    fun serachCorpClass(corp_code : String?, bgn_de : String?, last_reprt_at: String?, completion : (RESPONSE_STATE, String) -> Unit){
+    fun serachCorpData(corp_name : String?, completion : (RESPONSE_STATE, String) -> Unit){
 
-        val corp_code_new : String = corp_code ?: ""
-        val bgn_de_new : String = bgn_de ?: ""
-        val last_reprt_at_new : String = last_reprt_at ?: ""
+        val corp_name_new : String = corp_name ?: ""
 
-        val call : Call<JsonElement> = iRetrofit?.getCorpClass(corp_code = corp_code_new, bgn_de= bgn_de_new, last_reprt_at = last_reprt_at_new ).let{
-            it
-        } ?: return
-
-        call.enqueue(object : retrofit2.Callback<JsonElement>{
-
-            // 응답 실패시
-            override fun onFailure(call: Call<JsonElement>, t: Throwable) {
-                Log.d(TAG, "RetrofitManager - onFailure() called / t: $t")
-
-                completion(RESPONSE_STATE.FAIL, t.toString())
-            }
-
-            // 응답 성공시
-            override fun onResponse(call: Call<JsonElement>, response: Response<JsonElement>) {
-                Log.d(TAG, "RetrofitManager - onResponse() called / response : ${response.body()}")
-
-                completion(RESPONSE_STATE.OKAY ,response.body().toString())
-
-            }
-
-        })
-
-    }
-
-    fun serachCorpData(corp_code : String?, bsns_year : String?, reprt_code: String?, completion : (RESPONSE_STATE, String) -> Unit){
-
-        val corp_code_new : String = corp_code ?: ""
-        val bsns_year_new : String = bsns_year ?: ""
-        val reprt_code_new : String = reprt_code ?: ""
-
-        val call : Call<JsonElement> = iRetrofit?.getCorpData(corp_code = corp_code_new, bsns_year= bsns_year_new, reprt_code = reprt_code_new ).let{
+        val call : Call<JsonElement> = iRetrofit?.getCorpData(corp_name = corp_name_new).let{
             it
         } ?: return
 

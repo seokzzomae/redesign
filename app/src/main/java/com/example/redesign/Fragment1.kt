@@ -30,21 +30,10 @@ class Fragment1 : Fragment() {
 
         mainActivity =context as MainActivity
 
-
-
-
     }
-
-
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle? ): View? {
         val view =inflater.inflate(R.layout.frag1, container, false)
-
-
-
-
-
-
         return view
     }
 
@@ -52,36 +41,16 @@ class Fragment1 : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
         resultButton.setOnClickListener {
-
             mainActivity?.companyinput()
-
         }
-
-
         mainActivity?.myungun()
 
-
-
-
-
-
-
-
     }
-
-
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
         outState?.putString("data1" ,text_myungun.text.toString())
     }
-
-
-
-
-
-
 }

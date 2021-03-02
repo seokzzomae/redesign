@@ -8,16 +8,8 @@ import retrofit2.http.Query
 
 interface IRetrofit {
 
-    @GET(API.SEARCH_CORP_CLASS)
-    fun getCorpClass(
-            @Query("corp_code") corp_code :String,
-            @Query("bgn_de") bgn_de : String,
-            @Query("last_reprt_at") last_reprt_at : String): Call<JsonElement>
-
-    @GET(API.SEARCH_CORP_DATA)
+    @GET("api")
     fun getCorpData(
-            @Query("corp_code") corp_code : String,
-            @Query("bsns_year") bsns_year : String,
-            @Query("reprt_code") reprt_code : String): Call<JsonElement>
+            @Query("corp_name") corp_name : String): Call<JsonElement>
 
 }
