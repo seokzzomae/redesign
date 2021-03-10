@@ -16,13 +16,13 @@ class Result : AppCompatActivity() {
 
         resultname.text = company1
 
-        var situation="관리 조건"  //관리 조건 , 상폐 조건
+        var situation = "관리 조건"  //관리 조건 , 상폐 조건
 
-        var Max_score=25  //가장 안 좋은 점수
+        var maxScore = 25  //가장 안 좋은 점수
 
         var text1 ="관련 설명 쓰는 곳곳!!!"
 
-        score.progress = Max_score
+        score.progress = maxScore
 
         detail_opinion.text = text1
 
@@ -33,21 +33,21 @@ class Result : AppCompatActivity() {
         }
 
         when{
-            Max_score >= 75 ->{
+            maxScore >= 75 ->{
                 resultImage.setBackgroundResource(
                     R.drawable.bad_result)
                 yuhumdo.text = "매우 위험"
                 opinion.text = "투자를 삼가세요!"
             }
 
-            Max_score > 25 ->{
+            maxScore > 25 ->{
                 resultImage.setBackgroundResource(
                         R.drawable.medium_result)
                 yuhumdo.text = "위험"
                 opinion.text = "자산이 위험해요!"
             }
 
-            Max_score >= 0 ->{
+            maxScore >= 0 ->{
                 resultImage.setBackgroundResource(
                     R.drawable.good_result)
                 yuhumdo.text = "양호"

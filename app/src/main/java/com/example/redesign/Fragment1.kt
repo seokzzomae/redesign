@@ -75,6 +75,7 @@ class Fragment1 : Fragment() {
 
     private fun companyInput() {
         // TODO 회사명 없이 검색 눌렀을 때 검색 넘어가지 않게, 다른 에러 가능한 케이스도 처리해줘야함
+        // TODO editText 클릭하고 다른 곳 누르면 키보드 없어지게 설정.
         val intent = Intent(context, Result::class.java)
         intent.putExtra("company",companyname.text.toString())
         startActivity(intent)
