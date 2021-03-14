@@ -12,9 +12,9 @@ class Result : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_result)
 
-        val company1 = intent.getStringExtra("company")   //회사 이름 받음
+        val companyName = intent.getStringExtra("company")   //회사 이름 받음
 
-        resultname.text = company1
+        resultname.text = companyName
 
         var situation = "관리 조건"  //관리 조건 , 상폐 조건
 

@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView
 class ProfileAdapter (val profileList: ArrayList<profiles>) : RecyclerView.Adapter<ProfileAdapter.CustomViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileAdapter.CustomViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_user, parent,false)
-
         return CustomViewHolder(view)
     }
 
@@ -25,11 +24,8 @@ class ProfileAdapter (val profileList: ArrayList<profiles>) : RecyclerView.Adapt
     }
     
     class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
-
-
         val name = itemView.findViewById<TextView>(R.id.tv_name)
         val jogun = itemView.findViewById<TextView>(R.id.tv_jogun)
         val score = itemView.findViewById<TextView>(R.id.tv_score)
-
     }
 }

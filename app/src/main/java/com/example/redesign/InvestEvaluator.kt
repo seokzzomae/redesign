@@ -8,7 +8,6 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.round
 
-
 class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
     private val dataStatus : ArrayList<Int> = arrayListOf()
     private val salesAmount : ArrayList<Long?> = arrayListOf()
@@ -72,10 +71,10 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
 //        for (test in tests){
 //            val thisTest : () -> Pair<DelistingConditions, Double>= ::test
 //        }
-        var (salseAmountSituation, salseAmountScore) = testSalesAmount()
-        var (netIncomeTestResultDelist , netIncomeTestResultCare) = testNetIncome()
-        var (longtermProfitSituation, longtermProfitScore) = testLongtermProfit()
-        var (capitalErosionSituation, capitalErosionScore) = testCapitalErosion()
+        val (salseAmountSituation, salseAmountScore) = testSalesAmount()
+        val (netIncomeTestResultDelist , netIncomeTestResultCare) = testNetIncome()
+        val (longtermProfitSituation, longtermProfitScore) = testLongtermProfit()
+        val (capitalErosionSituation, capitalErosionScore) = testCapitalErosion()
 
         return arrayListOf(salseAmountSituation, salseAmountScore, netIncomeTestResultDelist , netIncomeTestResultCare, longtermProfitSituation, longtermProfitScore, capitalErosionSituation, capitalErosionScore)
     }
