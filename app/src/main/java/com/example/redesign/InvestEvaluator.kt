@@ -3,13 +3,13 @@ package com.example.redesign
 import android.util.Log
 import com.example.redesign.models.DelistingConditions
 import org.json.JSONArray
+import java.util.function.DoubleBinaryOperator
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.round
-import kotlin.reflect.KFunction
 
 
 class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
-
     private val dataStatus : ArrayList<Int> = arrayListOf()
     private val salesAmount : ArrayList<Long?> = arrayListOf()
     private val netIncomeAmount : ArrayList<Long?> = arrayListOf()
@@ -42,7 +42,7 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
     private val lastYearRprtCnt = dataStatus.slice(4 until 8).sum()  // 작년
 
     // 조건값
-    // 항목 1 조건 - 매출액 - 코스피: 50 억 / 코스닥: 30억
+    // 항목 1 조건 - 매출액 - 코스피: 50 억 / 코스닥: 30억 2년 연속시 상폐
     private val salesLimit = if (corpClass == "Y") 5000000000 else 3000000000
 
     // 모든 InvestEvaluator 클래스 오브젝트에 동일하게 적용되는 변수(자바에선 static 변수라고 불리는 변수)
@@ -65,40 +65,42 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
         return sum
     }
 
-    fun evaluateCorp() : Pair<String, Double>{
-        var maxScore = 0
-        var situation : DelistingConditions
-        val tests = arrayOf(::testCapitalErosion)
+    fun evaluateCorp() : Any{
+//        val tests = arrayOf(::testCapitalErosion)
 //        val tests : Array<KFunction<*>> = arrayOf(::testCapitalErosion, ::testLongtermProfit, ::testNetIncome, ::testSalesAmount)
+//
+//        for (test in tests){
+//            val thisTest : () -> Pair<DelistingConditions, Double>= ::test
+//        }
+        var (salseAmountSituation, salseAmountScore) = testSalesAmount()
+        var (netIncomeTestResultDelist , netIncomeTestResultCare) = testNetIncome()
+        var (longtermProfitSituation, longtermProfitScore) = testLongtermProfit()
+        var (capitalErosionSituation, capitalErosionScore) = testCapitalErosion()
 
-        for (test in tests){
-            val thisTest : () -> Pair<DelistingConditions, Double> = ::test
-        }
-
-
-        return Pair(situation, maxScore)
+        return arrayListOf(salseAmountSituation, salseAmountScore, netIncomeTestResultDelist , netIncomeTestResultCare, longtermProfitSituation, longtermProfitScore, capitalErosionSituation, capitalErosionScore)
     }
 
     //  올해부터 몇 년 전인가 0          - 1         - 1             - 2             - 2           - 3           - 3            - 4          - 4               - 5
     //  인덱스 번호          0 2 4 6 -> 1 3 5 7 -> 8 10 12 14 -> 9 11 13 15 -> 16 18 20 22 -> 17 19 21 23 -> 24 26 28 30 -> 25 27 29 31 -> 32 34 36 38 -> 33 35 37 39
 
     //함수 1 : 매출액
-    fun testSalesAmount(): Pair<DelistingConditions, Double>? {
-        println("1. 매출액 기준 조건 검사")
+    //항목 1 조건 - 매출액 - 코스피: 50 억 / 코스닥: 30억 2년 연속시 상폐
+    private fun testSalesAmount(): Pair<DelistingConditions, Double> {
+        Log.i(TAG, "1. 매출액 기준 조건 검사")
 
         // 여태까지 상태 좋던 애들은 관리 들어기 전이니 관리 조건으로
-        val salesStatus : DelistingConditions? = when(curYearRprtCnt){
+        val delistingCondition : DelistingConditions = when(curYearRprtCnt){
             0-> {
                 when (lastYearRprtCnt) {
                     3 -> if ((salesAmount[22]?:throw IllegalArgumentException("-2 year sales amount is null")) < salesLimit) DelistingConditions.DELIST  else DelistingConditions.CARE
                     4 -> if ((salesAmount[14]?:throw IllegalArgumentException("-1 year sales amount is null")) < salesLimit) DelistingConditions.DELIST  else DelistingConditions.CARE
-                    else -> throw IllegalArgumentException("Prev year reports are less than 3.") //상장된지 2년 이하인 기업은 미리 걸러내서 점수를 내지 않음을 표기해야 함
+                    else -> throw IllegalArgumentException("Prev year reports are less than 3.") // 상장된지 2년 이하인 기업은 미리 걸러내서 점수를 내지 않아야함. 여기서 Null case 방법
                 }
             }
             else -> if((salesAmount[14]?:throw IllegalArgumentException("sales amount for prev year is null")) < salesLimit) DelistingConditions.DELIST  else DelistingConditions.CARE
         }
 
-        val index = arrayOf(0, 2, 4)
+        val index = arrayOf(0, 2, 4) // 올해의 1,2,3분기 보고서 인덱스
         val tempArray : Array<Long?> = arrayOfNulls(3)
         var tempArraySize : Int = 0
         for (i in index){
@@ -107,15 +109,14 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
             }
         }
 
-        var salesScore : Double =
-                if (tempArraySize != 0) {
+        var salesScore : Double = if (tempArraySize != 0) {
             when {
                 tempArray.slice(0 until tempArraySize).filterNotNull().sum() >= tempArraySize.toDouble() * salesLimit / 4 -> {
                     when (tempArraySize) {
                         1 -> (1 - (salesAmount[0]?:throw IllegalArgumentException("null in salesAmount[0]")).times(4).toDouble() / salesLimit) * 100
                         2 -> (1 - sumNullable(salesAmount[0], salesAmount[2]?.times(3)).toDouble() / salesLimit) * 100
                         3 -> (1 - sumNullable(salesAmount[0], salesAmount[2], salesAmount[4]).toDouble() / salesLimit) * 100
-                        else -> { //나올 일 없음.
+                        else -> { // 나올 일 없음
                             throw IllegalArgumentException("sales_score: null\ntemp_array_size: $tempArraySize (not in [1,2,3])")
                         }
                     }
@@ -127,73 +128,76 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
         else 0.0
 
         salesScore = if (salesScore < 0) 0.0 else salesScore
-        println("$salesStatus ${round(salesScore*100)/100} %")
+        Log.i(TAG, "$delistingCondition ${round(salesScore*100)/100} %")
 
-        return when (salesStatus) {
-            null -> {
-                Log.i(TAG, "null report in testSalesAmount()")
-                null
-            }
-            else -> Pair(salesStatus, salesScore)
-        }
+        return Pair(delistingCondition, salesScore)
     }
 
     //함수 2 : 법인세 비용차감전계속 사업손실
-    fun testNetIncome() : Unit {
-        println("2. 법인세 비용차감전계속 사업손실 검사")
+    //자기자본의 50%를 초과(&10억원 이상)하는 법인세비용차감전계속사업손실이 최근 3년간 2회 이상 되면 관리, 관리 지정된 뒤 재발하면 상폐
+    private fun testNetIncome() : Pair<Pair<DelistingConditions, Double>, Pair<DelistingConditions, Double>> {
+        Log.i(TAG, "2. 법인세 비용차감전계속 사업손실 검사")
         val bzReportIndices = arrayOf(38, 30, 22, 14) // 4,3,2,1년 전 사업보고서 인덱스
         val scoreArray : Array<Int> = Array(bzReportIndices.size) {0}
         if (corpClass == "K") {
             for ((score_index, bz_rp_index) in bzReportIndices.withIndex()) {
-                val condition = netIncomeAmount[bz_rp_index]?.let {
+                val delistingCondition = netIncomeAmount[bz_rp_index]?.let {
                     (it < netIncomeLimit) and (abs(it) > ((ownershipAmount[bz_rp_index]?.toDouble()
                             ?: throw IllegalArgumentException("ownershipAmount[${bz_rp_index}] is null")) / 2))
                 }
                         ?: throw IllegalArgumentException("netIncomeAmount[${bz_rp_index}] is null")
-                if (condition) scoreArray[score_index] = 1 // 2번 조건 만족시 1
+                if (delistingCondition) scoreArray[score_index] = 1 // 2번 조건 만족시 1
             }
             when (curYearRprtCnt) {
                 0 -> {
                     when (lastYearRprtCnt) {
                         3 -> {
                             val lastYearNetIncome = sumNullable(netIncomeAmount[8], netIncomeAmount[10], netIncomeAmount[12])
-                            val condition = (lastYearNetIncome < (netIncomeLimit.toDouble() * 3 / 4)) and (abs(lastYearNetIncome) > ((ownershipAmount[12]?.toDouble()
+                            val lastYearNetIncomeCondition = (lastYearNetIncome < (netIncomeLimit.toDouble() * 3 / 4)) and (abs(lastYearNetIncome) > ((ownershipAmount[12]?.toDouble()
                                     ?: throw IllegalArgumentException("ownershipAmount[12] is null")) / 2))
                             when {
                                 (scoreArray.sum() == 2) and (scoreArray[2] == 1) -> {
-                                    if (condition) {
-                                        println("관리 조건 : 100%")
-                                        println("상폐 조건 : 87.5%")
+                                    if (lastYearNetIncomeCondition) {
+                                        Log.i(TAG, "관리 조건 : 100%")
+                                        Log.i(TAG, "상폐 조건 : 87.5%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 87.5), Pair(DelistingConditions.CARE, 100.0))
                                     } else {
-                                        println("관리 조건 : 100%")
-                                        println("상폐 조건 : 0%")
+                                        Log.i(TAG, "관리 조건 : 100%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 0.0))
                                     }
                                 }
                                 scoreArray.sum() == 0 -> {
-                                    if (condition) {
-                                        println("관리 조건 : 37.5%")
-                                        println("상폐 조건 : 0%")
+                                    if (lastYearNetIncomeCondition) {
+                                        Log.i(TAG, "관리 조건 : 37.5%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 37.5), Pair(DelistingConditions.CARE, 0.0))
                                     } else {
-                                        println("관리 조건 : 0%")
-                                        println("상폐 조건 : 0%")
+                                        Log.i(TAG, "관리 조건 : 0%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                                     }
                                 }
                                 scoreArray[1] + scoreArray[2] == 1 -> {
-                                    if (condition) {
-                                        println("관리 조건 : 87.5%")
-                                        println("상폐 조건 : 0%")
+                                    if (lastYearNetIncomeCondition) {
+                                        Log.i(TAG, "관리 조건 : 87.5%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 87.5), Pair(DelistingConditions.CARE, 0.0))
                                     } else {
-                                        println("관리 조건 : 0%")
-                                        println("상폐 조건 : 0%")
+                                        Log.i(TAG, "관리 조건 : 0%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                                     }
                                 }
                                 else -> {
-                                    if (condition) {
-                                        println("관리 조건 : 37.5%")
-                                        println("상폐 조건 : 0%")
+                                    if (lastYearNetIncomeCondition) {
+                                        Log.i(TAG, "관리 조건 : 37.5%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 37.5), Pair(DelistingConditions.CARE, 0.0))
                                     } else {
-                                        println("관리 조건 : 0%")
-                                        println("상폐 조건 : 0%")
+                                        Log.i(TAG, "관리 조건 : 0%")
+                                        Log.i(TAG, "상폐 조건 : 0%")
+                                        return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                                     }
                                 }
                             }
@@ -201,22 +205,30 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                         4 -> {
                             when {
                                 (scoreArray.sum() >= 3) and (scoreArray[2] == 1) -> {
-                                    println("관리 조건 : 100%")
-                                    println("상폐 조건 : 100%")
+                                    Log.i(TAG, "관리 조건 : 100%")
+                                    Log.i(TAG, "상폐 조건 : 100%")
+                                    return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 100.0))
                                 }
                                 (scoreArray.slice(1..scoreArray.lastIndex).sum() >= 2) and (scoreArray[3] == 1) -> {
-                                    println("관리 조건 : 100%")
-                                    println("상폐 조건 : 0%")
+                                    Log.i(TAG, "관리 조건 : 100%")
+                                    Log.i(TAG, "상폐 조건 : 0%")
+                                    return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 0.0))
                                 }
                                 (scoreArray.slice(2..scoreArray.lastIndex).sum() >= 1) and (scoreArray[3] == 1) -> {
-                                    println("관리 조건 : 50%")
-                                    println("상폐 조건 : 0%")
+                                    Log.i(TAG, "관리 조건 : 50%")
+                                    Log.i(TAG, "상폐 조건 : 0%")
+                                    return Pair(Pair(DelistingConditions.DELIST, 50.0), Pair(DelistingConditions.CARE, 0.0))
                                 }
                                 else -> {
-                                    println("관리 조건 : 0%")
-                                    println("상폐 조건 : 0%")
+                                    Log.i(TAG, "관리 조건 : 0%")
+                                    Log.i(TAG, "상폐 조건 : 0%")
+                                    return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                                 }
                             }
+                        }
+                        else -> {
+                            Log.i(TAG, "작년 보고서 수 : ${lastYearRprtCnt} 가 3,혹은 4에 해당하지 않음")
+                            throw IllegalArgumentException("작년 보고서 수 : ${lastYearRprtCnt} 가 3,혹은 4에 해당하지 않음")
                         }
                     }
                 }
@@ -229,38 +241,46 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                     when {
                         (scoreArray.slice(1..scoreArray.lastIndex).sum() == 2) and (scoreArray[3] == 1) -> {
                             if (condition) {
-                                println("관리 조건 : 100%")
-                                println("상폐 조건 : 25%")
+                                Log.i(TAG, "관리 조건 : 100%")
+                                Log.i(TAG, "상폐 조건 : 25%")
+                                return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 25.0))
                             } else {
-                                println("관리 조건 : 100%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 100%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         scoreArray.sum() == 0 -> {
                             if (condition) {
-                                println("관리 조건 : 12.5%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 12.5%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 12.5), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 0%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 0%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         scoreArray.slice(2..scoreArray.lastIndex).sum() == 1 -> {
                             if (condition) {
-                                println("관리 조건 : 62.5%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 62.5%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 62.5), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 50%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 50%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 50.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         else -> {
                             if (condition) {
-                                println("관리 조건 : 12.5%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 12.5%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 12.5), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 0%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 0%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                     }
@@ -274,38 +294,46 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                     when {
                         (scoreArray.slice(1..scoreArray.lastIndex).sum() == 2) and (scoreArray[3] == 1) -> {
                             if (condition) {
-                                println("관리 조건 : 100%")
-                                println("상폐 조건 : 50%")
+                                Log.i(TAG, "관리 조건 : 100%")
+                                Log.i(TAG, "상폐 조건 : 50%")
+                                return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 50.0))
                             } else {
-                                println("관리 조건 : 100%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 100%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         scoreArray.sum() == 0 -> {
                             if (condition) {
-                                println("관리 조건 : 25%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 25%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 25.0), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 0%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 0%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         scoreArray.slice(2..scoreArray.lastIndex).sum() == 1 -> {
                             if (condition) {
-                                println("관리 조건 : 75%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 75%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 75.0), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 50%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 50%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 50.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         else -> {
                             if (condition) {
-                                println("관리 조건 : 25%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 25%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 25.0), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 0%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 0%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                     }
@@ -318,53 +346,72 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                     when {
                         (scoreArray.slice(1..scoreArray.lastIndex).sum() == 2) and (scoreArray[3] == 1) -> {
                             if (condition) {
-                                println("관리 조건 : 100%")
-                                println("상폐 조건 : 75%")
+                                Log.i(TAG, "관리 조건 : 100%")
+                                Log.i(TAG, "상폐 조건 : 75%")
+                                return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 75.0))
                             } else {
-                                println("관리 조건 : 100%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 100%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 100.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         scoreArray.sum() == 0 -> {
                             if (condition) {
-                                println("관리 조건 : 37.5%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 37.5%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 37.5), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 0%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 0%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         scoreArray.slice(2..scoreArray.lastIndex).sum() == 1 -> {
                             if (condition) {
-                                println("관리 조건 : 87.5%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 87.5%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 87.5), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 50%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 50%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 50.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                         else -> {
                             if (condition) {
-                                println("관리 조건 : 37.5%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 37.5%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 37.5), Pair(DelistingConditions.CARE, 0.0))
                             } else {
-                                println("관리 조건 : 0%")
-                                println("상폐 조건 : 0%")
+                                Log.i(TAG, "관리 조건 : 0%")
+                                Log.i(TAG, "상폐 조건 : 0%")
+                                return Pair(Pair(DelistingConditions.DELIST, 0.0), Pair(DelistingConditions.CARE, 0.0))
                             }
                         }
                     }
                 }
+                else -> {
+                    Log.i(TAG, "현재 년도 리포트 수 : ${curYearRprtCnt} 이상.")
+                    throw throw IllegalArgumentException("현재 년도 리포트 수 : ${curYearRprtCnt} 이상.")
+                }
             }
         }
-        else println("코스닥만 해당")
+        else {
+            Log.i(TAG, "Corp class not KOSDAQ")
+            // TODO 일단 KOSDAQ 아닌 주식 들어오면 에러 띄우게 해놨는데 코스닥 아닌 애면 그냥 함수 결과를 리턴하지 않는 걸로 해야하나
+            throw IllegalArgumentException("Corp Class is not K, Only use KOSDAQ")
+        }
     }
 
     //함수 3 : 장기간 영업손실
-    fun testLongtermProfit(): Unit {
-        println("3. 장기간 영업손실 검사")
+    //4 영업연도 영업손실시 관리, 5년 연속시 상폐
+    private fun testLongtermProfit(): Pair<DelistingConditions, Double> {
+        Log.i(TAG, "3. 장기간 영업손실 검사")
+
         if(corpClass == "K"){
             if(curYearRprtCnt == 0) {
                 if (lastYearRprtCnt > 3) { // 징검다리로 영업손실이 나는 건 상관 없는 건가요?
+                    val percentile : Double
                     if ((businessProfitAmount[14]
                                     ?: throw IllegalArgumentException("-1 year businessProfitAmount is null")) < 0) {
                         if ((businessProfitAmount[22]
@@ -372,11 +419,28 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                             if ((businessProfitAmount[30]
                                             ?: throw IllegalArgumentException("-3 year businessProfitAmount is null")) < 0) {
                                 if ((businessProfitAmount[38]
-                                                ?: throw IllegalArgumentException("-4 year businessProfitAmount is null")) < 0) println("상폐 조건 충족 시작")
-                                else println("관리 조건 75% 충족")
-                            } else println("관리 조건 50% 충족")
-                        } else println("관리 조건 25% 충족")
-                    } else println("해당 사항 없음")
+                                                ?: throw IllegalArgumentException("-4 year businessProfitAmount is null")) < 0) {
+                                    Log.i(TAG, "상폐 조건 충족 시작")
+                                    // TODO: 이거 맞나 체크
+                                    return Pair(DelistingConditions.DELIST, 100.0)
+                                }
+                                else {
+                                    Log.i(TAG, "관리 조건 75% 충족")
+                                    percentile = 75.0
+                                }
+                            } else {
+                                Log.i(TAG, "관리 조건 50% 충족")
+                                percentile = 50.0
+                            }
+                        } else {
+                            Log.i(TAG, "관리 조건 25% 충족")
+                            percentile = 25.0
+                        }
+                    } else {
+                        Log.i(TAG, "해당 사항 없음")
+                        percentile = 0.0
+                    }
+                    return Pair(DelistingConditions.CARE, percentile)
                 }
                 else {
                     val penalty = sumNullable(businessProfitAmount[8], businessProfitAmount[10], businessProfitAmount[12]) 
@@ -386,23 +450,30 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                             if((businessProfitAmount[38]?: throw IllegalArgumentException("-4 year businessProfitAmount is null")) < 0) {
                                 if ((businessProfitAmount[39]
                                                 ?: throw IllegalArgumentException("-5 year businessProfitAmount is null")) < 0) {
-                                    if (penalty < 0) println("상폐 조건 75% 충족")
+                                    if (penalty < 0) {
+                                        Log.i(TAG, "상폐 조건 75% 충족")
+                                        return Pair(DelistingConditions.DELIST, 75.0)
+                                    }
                                 }
                                 else {
                                     percentile += 75
-                                    println("관리 조건 $percentile% 충족")
+                                    Log.i(TAG, "관리 조건 $percentile% 충족")
                                 }
                             }
                             else {
                                 percentile += 50
-                                println("관리 조건 $percentile% 충족")
+                                Log.i(TAG, "관리 조건 $percentile% 충족")
                             }
                         }
                         else {
                             percentile += 25
-                            println("관리 조건 $percentile% 충족")
+                            Log.i(TAG, "관리 조건 $percentile% 충족")
                         }
-                    } else println("해당 사항 없음")
+                    } else {
+                        Log.i(TAG, "해당 사항 없음")
+                        return Pair(DelistingConditions.CARE, 0.0)
+                    }
+                    return Pair(DelistingConditions.CARE, percentile.toDouble())
                 }
             }
             else{
@@ -416,118 +487,241 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                                         ?: throw IllegalArgumentException("-3 year businessProfitAmount is null")) < 0) {
                             if ((businessProfitAmount[38]
                                             ?: throw IllegalArgumentException("-4 year businessProfitAmount is null")) < 0) {
-                                val sp_score = if (penalty < 0) 25 * curYearRprtCnt else 0
-                                println("상폐 조건 ${sp_score}% 충족")
-                            } else {
-                                percentile += 75
-                                println("상폐 조건 ${percentile}% 충족")
-                            }
-                        } else {
-                            percentile += 50
-                            println("상폐 조건 ${percentile}% 충족")
-                        }
-                    } else {
-                        percentile += 25
-                        println("상폐 조건 ${percentile}% 충족")
-                    }
-                } else {
-                    if (percentile == 0) println("해당 사항 없음")
-                    else println("상폐 조건 ${percentile}% 충족")
+                                percentile = if (penalty < 0) 25 * curYearRprtCnt else 0
+                            } else percentile += 75
+                        } else percentile += 50
+                    } else percentile += 25
                 }
+                Log.i(TAG, "상폐 조건 ${percentile}% 충족")
+                return Pair(DelistingConditions.DELIST, percentile.toDouble())
             }
         }
-        else println("코스피는 해당 사항 없음")
+        else {
+            Log.i(TAG, "코스피는 해당 사항 없음")
+            // TODO: 코스피일 때 null 값인데 어떻게 할지 고름
+            throw IllegalArgumentException("코스피는 해당 사항 없음")
+        }
     }
 
     //함수 4: 자본 잠식
-    fun testCapitalErosion() : Unit{
-        fun capitalErosionRate(index : Int) : Double{
+    // [관리]
+    // (A) 사업연도(반기)말 자본잠식률 50%이상​
+    // (B) 사업연도(반기)말 자기자본 10억 원 미만
+    // [상폐]
+    // A or C 후 사업연도(반기)말 자본잠식률 50% 이상​
+    // B or C 후 사업연도(반기)말 자기자본 10억 원 미만​
+    // 최근년말 완전자본잠식
+    private fun testCapitalErosion() : Pair<DelistingConditions, Double> {
+        fun capitalErosionRate(index : Int) : Double {
             return capitalAmount[index]?.let{(it-(ownershipAmount[index]?.toDouble()?:throw IllegalArgumentException("ownershipAmount[$index] is null")))/it * 100}
                     ?:throw IllegalArgumentException("capitalAmount[$index] is null")
         }
+        var criteriaADL = DelistingConditions.CARE
+        var criteriaAScore = 0.0
+        var criteriaBDL = DelistingConditions.CARE
+        var criteriaBScore = 0.0
+        val criteria : DelistingConditions
+        val score : Double
+
         when(corpClass){
             "K"->{
                 when(curYearRprtCnt) {
                     0 -> when(lastYearRprtCnt){
                              4 -> {
-                                if(capitalErosionRate(14)>=capitalErosionRateLimit) println("관리 A 100%") // null checked.
-                                else println("관리 A 0%")
-                                if(ownershipAmount[14]!! < capitalErosionLimit) println("관리 B 100%")
-                                else println("관리 B 0%")
+                                if (capitalErosionRate(14)>=capitalErosionRateLimit) {
+                                    Log.i(TAG, "관리 A 100%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 100.0
+                                }
+                                else {
+                                    Log.i(TAG, "관리 A 0%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 0.0
+                                }
+                                if (ownershipAmount[14]!! < capitalErosionLimit) {
+                                    Log.i(TAG, "관리 B 100%")
+                                    criteriaBDL = DelistingConditions.CARE
+                                    criteriaBScore = 100.0
+                                }
+                                else {
+                                    Log.i(TAG, "관리 B 0%")
+                                    criteriaBDL = DelistingConditions.CARE
+                                    criteriaBScore = 0.0
+                                }
                             }
                             else ->{
-                                if(capitalErosionRate(12)>=capitalErosionRateLimit) println("관리 A 50%") // null checked.
-                                else println("관리 A 0%")
-                                if(ownershipAmount[12]!! < capitalErosionLimit.toDouble()/2) println("관리 B 50%")
-                                else println("관리 B 0%")
+                                if(capitalErosionRate(12)>=capitalErosionRateLimit) {
+                                    Log.i(TAG, "관리 A 50%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 50.0
+                                }
+                                else {
+                                    Log.i(TAG, "관리 A 0%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 0.0
+                                }
+                                if(ownershipAmount[12]!! < capitalErosionLimit.toDouble()/2) {
+                                    Log.i(TAG, "관리 B 50%")
+                                    criteriaBDL = DelistingConditions.CARE
+                                    criteriaBScore = 50.0
+                                }
+                                else {
+                                    Log.i(TAG, "관리 B 0%")
+                                    criteriaBDL = DelistingConditions.CARE
+                                    criteriaBScore = 0.0
+                                }
                             }
                         }
                     1 -> {
                         when{
-                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(0)>=capitalErosionRateLimit) -> println("상폐 A 50%")
-                            capitalErosionRate(14)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(0)>=capitalErosionRateLimit) -> {
+                                Log.i(TAG, "상폐 A 50%")
+                                criteriaADL = DelistingConditions.DELIST
+                                criteriaAScore = 50.0
                             }
-                            capitalErosionRate(0)>=capitalErosionRateLimit -> println("관리 A 50%")
-                            else -> println("관리 A 0%")
-
+                            capitalErosionRate(14)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                // TODO: 이런 케이스의 경우 관리 100% 로 표기할 것인지, 상폐 0% 로 표기할 것인지?
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
+                            }
+                            capitalErosionRate(0)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 50%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 50.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 0.0
+                            }
                         }
                         when{
-                            (ownershipAmount[14]!! < capitalErosionLimit) and (ownershipAmount[0]!! < capitalErosionLimit.toDouble()/2) -> println("상폐 B 50%")
-                            ownershipAmount[14]!! < capitalErosionLimit -> {
-                                println("관리 B 100%")
-                                println("상폐 B 0%")
+                            (ownershipAmount[14]!! < capitalErosionLimit) and (ownershipAmount[0]!! < capitalErosionLimit.toDouble()/2) ->{
+                                Log.i(TAG, "상폐 B 50%")
+                                criteriaBDL = DelistingConditions.DELIST
+                                criteriaBScore = 50.0
                             }
-                            ownershipAmount[0]!! < capitalErosionLimit.toDouble()/2 -> println("관리 B 50%")
-                            else -> println("관리 B 0%")
+                            ownershipAmount[14]!! < capitalErosionLimit -> {
+                                Log.i(TAG, "관리 B 100%")
+                                Log.i(TAG, "상폐 B 0%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 100.0
+                            }
+                            ownershipAmount[0]!! < capitalErosionLimit.toDouble()/2 -> {
+                                Log.i(TAG, "관리 B 50%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 50.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 B 0%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 0.0
+                            }
                         }
                     }
                     2 -> {
                         when{
-                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(2)>=capitalErosionRateLimit) -> println("상폐 A 100%")
+                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(2)>=capitalErosionRateLimit) -> {
+                                Log.i(TAG, "상폐 A 100%")
+                                criteriaADL = DelistingConditions.DELIST
+                                criteriaAScore = 100.0
+                            }
                             capitalErosionRate(14)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
                             }
                             capitalErosionRate(2)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
                             }
-                            else -> println("관리 A 0%")
-
+                            else -> {
+                                Log.i(TAG, "관리 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 0.0
+                            }
                         }
                         when{
-                            (ownershipAmount[14]!! < capitalErosionLimit) and (ownershipAmount[2]!! < capitalErosionLimit) -> println("상폐 B 100%")
-                            ownershipAmount[14]!! < capitalErosionLimit -> {
-                                println("관리 B 100%")
-                                println("상폐 B 0%")
+                            (ownershipAmount[14]!! < capitalErosionLimit) and (ownershipAmount[2]!! < capitalErosionLimit) -> {
+                                Log.i(TAG, "상폐 B 100%")
+                                criteriaBDL = DelistingConditions.DELIST
+                                criteriaBScore = 100.0
                             }
-                            ownershipAmount[2]!! < capitalErosionLimit -> println("관리 B 100%")
-                            else -> println("관리 B 0%")
+                            ownershipAmount[14]!! < capitalErosionLimit -> {
+                                Log.i(TAG, "관리 B 100%")
+                                Log.i(TAG, "상폐 B 0%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 100.0
+                            }
+                            ownershipAmount[2]!! < capitalErosionLimit -> {
+                                Log.i(TAG, "관리 B 100%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 100.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 B 0%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 0.0
+                            }
                         }
-
                     }
                     3 -> {
                         when{
-                            (capitalErosionRate(2)>=capitalErosionRateLimit) and (capitalErosionRate(4)>=capitalErosionRateLimit) -> println("상폐 A 50%")
-                            capitalErosionRate(2)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                            (capitalErosionRate(2)>=capitalErosionRateLimit) and (capitalErosionRate(4)>=capitalErosionRateLimit) -> {
+                                Log.i(TAG, "상폐 A 50%")
+                                criteriaADL = DelistingConditions.DELIST
+                                criteriaAScore = 50.0
                             }
-                            capitalErosionRate(4)>=capitalErosionRateLimit -> println("관리 A 50%")
-                            else -> println("관리 A 0%")
+                            capitalErosionRate(2)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
+                            }
+                            capitalErosionRate(4)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 50%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 50.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 0.0
+                            }
 
                         }
                         when{
-                            (ownershipAmount[2]!! < capitalErosionLimit) and (ownershipAmount[4]!! < capitalErosionLimit) -> println("상폐 B 50%")
-                            ownershipAmount[2]!! < capitalErosionLimit -> {
-                                println("관리 B 100%")
-                                println("상폐 B 0%")
+                            (ownershipAmount[2]!! < capitalErosionLimit) and (ownershipAmount[4]!! < capitalErosionLimit) -> {
+                                Log.i(TAG, "상폐 B 50%")
+                                criteriaBDL = DelistingConditions.DELIST
+                                criteriaBScore = 50.0
                             }
-                            ownershipAmount[5]!! < capitalErosionLimit.toDouble()/2 -> println("관리 B 50%")
-                            else -> println("관리 B 0%")
+                            ownershipAmount[2]!! < capitalErosionLimit -> {
+                                Log.i(TAG, "관리 B 100%")
+                                Log.i(TAG, "상폐 B 0%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 100.0
+                            }
+                            ownershipAmount[5]!! < capitalErosionLimit.toDouble()/2 -> {
+                                Log.i(TAG, "관리 B 50%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 50.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 B 0%")
+                                criteriaBDL = DelistingConditions.CARE
+                                criteriaBScore = 0.0
+                            }
                         }
+                    }
+                    else -> {
+                        Log.i(TAG, "당해년도 보고서 수가 0~3에 해당하지 않음")
+                        throw IllegalArgumentException("curYearRprtCnt : ${curYearRprtCnt}")
                     }
                 }
             }
@@ -536,63 +730,143 @@ class InvestEvaluator (jArray: JSONArray, private val corpClass: String){
                     0->{
                         when(lastYearRprtCnt){
                             4 -> {
-                                if(capitalErosionRate(14)>=capitalErosionRateLimit) println("관리 A 100%") // null checked.
-                                else println("관리 A 0%")
+                                if(capitalErosionRate(14)>=capitalErosionRateLimit) {
+                                    Log.i(TAG, "관리 A 100%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 100.0
+                                }
+                                else {
+                                    Log.i(TAG, "관리 A 0%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 0.0
+                                }
                             }
                             else -> {
-                                if(capitalErosionRate(12)>=capitalErosionRateLimit) println("관리 A 50%") // null checked.
-                                else println("관리 A 0%")
+                                if(capitalErosionRate(12)>=capitalErosionRateLimit) {
+                                    Log.i(TAG, "관리 A 50%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 50.0
+                                }
+                                else {
+                                    Log.i(TAG, "관리 A 0%")
+                                    criteriaADL = DelistingConditions.CARE
+                                    criteriaAScore = 0.0
+                                }
                             }
                         }
                     }
                     1->{
                         when{
-                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(0)>=capitalErosionRateLimit) -> println("상폐 A 25%")
-                            capitalErosionRate(14)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(0)>=capitalErosionRateLimit) -> {
+                                Log.i(TAG, "상폐 A 25%")
+                                criteriaADL = DelistingConditions.DELIST
+                                criteriaAScore = 25.0
                             }
-                            capitalErosionRate(0)>=50 -> println("관리 A 25%")
-                            else -> println("관리 A 0%")
+                            capitalErosionRate(14)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
+                            }
+                            capitalErosionRate(0)>=50 -> {
+                                Log.i(TAG, "관리 A 25%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 25.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 0.0
+                            }
                         }
                     }
                     2->{
                         when{
-                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(2)>=capitalErosionRateLimit) -> println("상폐 A 50%")
+                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(2)>=capitalErosionRateLimit) -> {
+                                Log.i(TAG, "상폐 A 50%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 50.0
+                            }
                             capitalErosionRate(14)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
                             }
                             capitalErosionRate(2)>=capitalErosionRateLimit -> {
-                                println("관리 A 50%")
-                                println("상폐 A 0%")
+                                Log.i(TAG, "관리 A 50%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 50.0
                             }
-                            else -> println("관리 A 0%")
+                            else -> {
+                                Log.i(TAG, "관리 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 0.0
+                            }
                         }
                     }
                     3->{
                         when{
-                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(4)>=capitalErosionRateLimit) -> println("상폐 A 75%")
-                            capitalErosionRate(14)>=capitalErosionRateLimit -> {
-                                println("관리 A 100%")
-                                println("상폐 A 0%")
+                            (capitalErosionRate(14)>=capitalErosionRateLimit) and (capitalErosionRate(4)>=capitalErosionRateLimit) -> {
+                                Log.i(TAG, "상폐 A 75%")
+                                criteriaADL = DelistingConditions.DELIST
+                                criteriaAScore = 75.0
                             }
-                            capitalErosionRate(4)>=capitalErosionRateLimit -> println("관리 A 75%")
-                            else -> println("관리 A 0%")
+                            capitalErosionRate(14)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 100%")
+                                Log.i(TAG, "상폐 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 100.0
+                            }
+                            capitalErosionRate(4)>=capitalErosionRateLimit -> {
+                                Log.i(TAG, "관리 A 75%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 75.0
+                            }
+                            else -> {
+                                Log.i(TAG, "관리 A 0%")
+                                criteriaADL = DelistingConditions.CARE
+                                criteriaAScore = 0.0
+                            }
                         }
+                    }
+                    else -> {
+                        Log.i(TAG, "당해년도 보고서 수가 0~3에 해당하지 않음")
+                        throw IllegalArgumentException("curYearRprtCnt : ${curYearRprtCnt}")
                     }
                 }
             }
             else -> throw IllegalArgumentException("Unidentified market label $corpClass")
         }
-        println("작년자본잠식률 : ${capitalErosionRate(14)}")
-        println("올해 1분기 자본잠식률 : ${capitalErosionRate(0)}")
-        println("올해 반기 자본잠식률 : ${capitalErosionRate(2)}")
+        Log.i(TAG, "작년자본잠식률 : ${capitalErosionRate(14)}")
+        Log.i(TAG, "올해 1분기 자본잠식률 : ${capitalErosionRate(0)}")
+        Log.i(TAG, "올해 반기 자본잠식률 : ${capitalErosionRate(2)}")
 
         //자기자본 = 자산총계
-        println("작년 자기자본 : ${totalAssetsAmount[14]}")
-        println("올해 1분기 자기자본 : ${totalAssetsAmount[0]}")
-        println("올해 자기자본 : ${totalAssetsAmount[2]}")
+        Log.i(TAG, "작년 자기자본 : ${totalAssetsAmount[14]}")
+        Log.i(TAG, "올해 1분기 자기자본 : ${totalAssetsAmount[0]}")
+        Log.i(TAG, "올해 자기자본 : ${totalAssetsAmount[2]}")
+
+        when {
+            (criteriaADL == DelistingConditions.DELIST) and (criteriaBDL == DelistingConditions.DELIST) -> {
+                criteria = DelistingConditions.DELIST
+                score = max(criteriaAScore, criteriaBScore)
+            }
+            criteriaADL == DelistingConditions.DELIST -> {
+                criteria = DelistingConditions.DELIST
+                score = criteriaAScore
+            }
+            criteriaBDL == DelistingConditions.DELIST -> {
+                criteria = DelistingConditions.DELIST
+                score = criteriaBScore
+            }
+            else -> {
+                criteria = DelistingConditions.CARE
+                score = max(criteriaAScore, criteriaBScore)
+            }
+        }
+        return Pair(criteria, score)
     }
 }
 

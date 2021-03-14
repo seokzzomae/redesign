@@ -8,33 +8,22 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class ProfileAdapter (val profileList: ArrayList<profiles>) : RecyclerView.Adapter<ProfileAdapter.CustomViewHolder>() {
-
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProfileAdapter.CustomViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_user, parent,false)
 
         return CustomViewHolder(view)
     }
 
-
-
     override fun getItemCount(): Int {
         return profileList.size
     }
 
     override fun onBindViewHolder(holder: ProfileAdapter.CustomViewHolder, position: Int) {
-
-
         holder.name.text= profileList.get(position).name
         holder.jogun.text = profileList.get(position).jogun
         holder.score.text = profileList.get(position).score.toString()
-
-
-
     }
-
-
-
+    
     class CustomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
 
 
