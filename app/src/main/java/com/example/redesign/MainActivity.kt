@@ -20,7 +20,8 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setFrag(0)
+
+        initFrag()
 
         btn_analyze.setOnClickListener {
             setFrag(0)
@@ -36,16 +37,27 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
         naviView.setNavigationItemSelectedListener(this)
     }
 
+    private fun initFrag() {
+        val ft = supportFragmentManager.beginTransaction()
+        ft.add(R.id.main_frame, Fragment1())
+        ft.add(R.id.main_frame, Fragment2())
+        ft.commit()
+    }
+
     private fun setFrag(fragNum: Int) {
         val ft = supportFragmentManager.beginTransaction()
+
         when(fragNum)
         {
-            0 -> {
-                ft.replace(R.id.main_frame, Fragment1()).commit()
+            0 ->{
+                ft.hide(Fragment2())
+                ft.show(Fragment1())
+                ft.commit()
             }
-
-            1 -> {
-                ft.replace(R.id.main_frame, Fragment2()).commit()
+            1 ->{
+                ft.hide(Fragment1())
+                ft.show(Fragment2())
+                ft.commit()
             }
         }
     }
@@ -70,4 +82,3 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
         val investEvaluator = InvestEvaluator(jArray, corp_name)
     }
 }
-
