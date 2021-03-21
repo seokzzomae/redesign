@@ -23,8 +23,7 @@ object RetrofitClient {
     // 레트로핏 클라이언트 선언
 
     private var retrofitClient: Retrofit? = null
-//    private lateinit var retrofitClient: Retrofit
-
+    // private lateinit var retrofitClient: Retrofit
 
     // 레트로핏 클라이언트 가져오기
     fun getClient(baseUrl: String): Retrofit? {
@@ -52,9 +51,7 @@ object RetrofitClient {
                         }
                     }
                 }
-
             }
-
         })
 
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
@@ -62,19 +59,15 @@ object RetrofitClient {
         // 위에서 설정한 로깅 인터셉터를 okhttp 클라이언트에 추가한다.
         client.addInterceptor(loggingInterceptor)
 
-
         // 기본 파라매터 인터셉터 설정
         val baseParameterInterceptor : Interceptor = (object : Interceptor{
-
             override fun intercept(chain: Interceptor.Chain): Response {
                 Log.d(TAG, "RetrofitClient - intercept() called")
                 // 오리지날 리퀘스트
                 val originalRequest = chain.request()
-
                 // ?client_id=asdfadsf
                 // 쿼리 파라매터 추가하기
                 val addedUrl = originalRequest.url.newBuilder().addQueryParameter("token", API.CRTFC_KEY).build()
-
                 val finalRequest = originalRequest.newBuilder()
                         .url(addedUrl)
                         .method(originalRequest.method, originalRequest.body)
@@ -82,9 +75,7 @@ object RetrofitClient {
 
                 return chain.proceed(finalRequest)
             }
-
         })
-
 
         // 위에서 설정한 기본파라매터 인터셉터를 okhttp 클라이언트에 추가한다.
         client.addInterceptor(baseParameterInterceptor)
@@ -95,22 +86,16 @@ object RetrofitClient {
         client.writeTimeout(10, TimeUnit.SECONDS)
         client.retryOnConnectionFailure(true)
 
-
         if(retrofitClient == null){
 
             // 레트로핏 빌더를 통해 인스턴스 생성
             retrofitClient = Retrofit.Builder()
                     .baseUrl(baseUrl)
                     .addConverterFactory(GsonConverterFactory.create())
-
                     // 위에서 설정한 클라이언트로 레트로핏 클라이언트를 설정한다.
                     .client(client.build())
-
                     .build()
         }
-
         return retrofitClient
     }
-
-
 }

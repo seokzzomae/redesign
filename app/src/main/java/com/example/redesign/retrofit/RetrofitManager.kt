@@ -14,9 +14,14 @@ class RetrofitManager {
     companion object {
         val instance = RetrofitManager()
     }
+    // TODO 원호 COMMENT: iRetrofit 과 RetrofitClient.getClient가 null일 수 있나요? 없으면 ? 없이 가는게 안전할 것 같습니다.
     private val iRetrofit : IRetrofit? = RetrofitClient.getClient(API.BASE_URL)?.create(IRetrofit::class.java)
 
-    fun serachCorpData(corp_name : String?, completion : (RESPONSE_STATE, String) -> Unit){
+    // TODO 원호 COMMENT: 위와 마찬가지로 corp_name 에 아무 것도 안 넣는 걸 다른데서 잡고 들어가는게 낫지 않을까 합니다.
+    // 그러면 corp_name 을 바로 getCorpData 에 인자로 넣어줄 수도 있구요.
+    // (ArgTypes) -> ReturnType 코틀린 함수 인자로 함수를 넣는 방식
+    // https://thdev.tech/kotlin/2017/10/02/Kotlin-Higher-Order-Function/
+    fun searchCorpData(corp_name : String?, completion : (RESPONSE_STATE, String) -> Unit){
 
         val corp_name_new : String = corp_name ?: ""
 

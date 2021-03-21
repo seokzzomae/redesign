@@ -61,12 +61,5 @@ class MainActivity : AppCompatActivity() , NavigationView.OnNavigationItemSelect
         return false
     }
 
-    fun getCorpData(corp_name: String) {
-        val assetManager: AssetManager = resources.assets
-        val inputStream= assetManager.open("jsonfile")
-        val jsonString = inputStream.bufferedReader().use { it.readText() }
-        val jObject = JSONObject(jsonString)
-        val jArray = jObject.getJSONArray("rprts")
-        val investEvaluator = InvestEvaluator(jArray, corp_name)
-    }
+
 }
